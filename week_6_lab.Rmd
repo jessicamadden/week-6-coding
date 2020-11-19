@@ -7,5 +7,112 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(palmerpenguins)
+library(ggpubr)
+library(broom)
 ```
 
+# A rank-based test exmple: Mann Whitney U
+
+```{r}
+set.seed(1414) #creates a pseudorandom sample
+gp_1 <- sample.int(20, size = 15, replace = TRUE) #creates random samples with integers 1-x
+gp_2 <- sample.int(30, size = 15, replace = TRUE)
+```
+
+### Exploratory histogram
+Is there evidence for a significant difference in ranks (medians) between the populations from which gp1 and gp2 are drawn?
+
+```{r}
+hist(gp_1)
+```
+
+```{r}
+hist(gp_2)
+```
+
+### Mann Whitney U 
+
+```{r}
+my_mwu <- wilcox.test(gp_1, gp_2)
+```
+
+
+# Simple Linear Regression
+
+### A. Look at it!
+
+```{r}
+ggplot(data = penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
+  geom_point()
+```
+
+### B. Model it
+
+```{r}
+#Linear model, stored as penguin_lm:
+penguin_lm <- lm(body_mass_g ~ flipper_length_mm, data = penguins)
+
+#Return the somplete overview:
+summary(penguin_lm)
+```
+
+### C. Access model outputs
+
+use the broom::tidy() function to get the model outputs in nice data frame format:
+
+```{r}
+penguin_lm_tidy <- broom::tidy(penguin_lm)
+```
+
+```{r}
+# Get the intercept:
+penguin_int <- penguin_lm_tidy$estimate[1]
+penguin_int
+```
+
+```{r}
+# Then get the flipper_length coefficient:
+penguin_coef <- penguin_lm_tidy$estimate[2]
+penguin_coef
+```
+
+```{r}
+# Metrics at a glance:
+penguin_lm_out <- broom::glance(penguin_lm)
+penguin_lm_out
+```
+
+Write statement about model that will automatically update:
+
+"Simple linear regression was used to explore the relationship between penguin flipper length (mm) and body mass (g) across all three penguin species, and including both male and female penguins. A significant regression model was found ($\beta$ = `r round(penguin_coef,3)`, F(`r penguin_lm_out$df`,`r penguin_lm_out$df.residual`) = `r round(penguin_lm_out$statistic,1)`, p < 0.001) with an R^2^ of `r round(penguin_lm_out$r.squared,3)`."
+
+### D. Explore model assumptions
+
+```{r}
+plot(penguin_lm)
+```
+
+###. Visualize the model
+
+```{r}
+ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
+  geom_point(size = 2) +
+  geom_smooth(method = "lm", 
+              color = "red", 
+              size = 0.5, 
+              fill = "gray10", 
+              alpha = 0.5) +
+  theme_light() +
+  ggpubr::stat_regline_equation(label.x = 180, label.y = 5700) #add equation information directly to the plot panel
+```
+
+### F. Find Pearson's R for correlation
+
+```{r}
+penguins_cor <- cor.test(penguins$flipper_length_mm, penguins$body_mass_g)
+penguins_cor
+```
+
+Here, we see that there is a strong positive correlation between penguin flipper length and body mass (*r* = `r round(penguins_cor$estimate,2)`, t(`r penguins_cor$parameter`) = `r round(penguins_cor$statistic,2)`, p < 0.001). 
